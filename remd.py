@@ -40,8 +40,8 @@ class REMD:
 
     def exchange(self):
         for i in range(self.nrep-1):
-            diff = -self.betas[i]*(self.pes(self.mdobjs[i].x)-self.pes(self.mdobjs[i+1].x))
-            -self.betas[i+1]*(self.pes(self.mdobjs[i+1].x)-self.pes(self.mdobjs[i].x))
+            diff = -self.betas[i]*(self.pes(self.mdobjs[i+1].x)-self.pes(self.mdobjs[i].x))
+            -self.betas[i+1]*(self.pes(self.mdobjs[i].x)-self.pes(self.mdobjs[i+1].x))
 
             if diff > 0.0:
                 prob = 1.0

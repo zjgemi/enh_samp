@@ -39,7 +39,6 @@ class MD:
         if grad != None:
             self.grad = grad
 
-        # initialize force
         self.f = -self.grad(self.x)
 
     def pes(self, x):

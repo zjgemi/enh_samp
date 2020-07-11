@@ -31,18 +31,18 @@ class ITS:
         pass
 
     def effpes(self, x):
-        pf = 0
+        den = 0
         for i in range(self.nbeta):
-            pf += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
-        return -np.log(pf)/self.beta
+            den += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
+        return -np.log(den)/self.beta
 
     def effgrad(self, x):
         num = 0
-        pf = 0
+        den = 0
         for i in range(self.nbeta):
             num += self.ns[i]*self.betas[i]*np.exp(-self.betas[i]*self.pes(x))
-            pf += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
-        return num/self.beta/pf*self.grad(x)
+            den += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
+        return num/self.beta/den*self.grad(x)
 
     def integrator(self, dt):
         self.mdobj.lfmiddle_integrator(dt)

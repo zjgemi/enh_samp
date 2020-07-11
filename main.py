@@ -1,77 +1,81 @@
 import numpy as np
+from md import MD
 from remd import REMD
 from its import ITS
 from isremd import ISREMD
-from sym_dw import v, dv
-#from ho import v, dv
+from entr_barr import v, dv, alpha
+#from sym_dw import v, dv
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
 
-beta = 1.0
-betas = np.exp(np.arange(0, -3, -0.6))
-nrep = len(betas)
-
-remdobj = REMD(n=1, betas=betas, m=[1.0], lgam=1.0, pes=v, grad=dv)
-
-xs = [[] for i in range(nrep)]
-for i in range(100000):
-    if i % 100 == 0:
-        print(i,remdobj.mdobjs[0].x[0])
-    remdobj.integrator(dt=0.02)
-    if i % 100 == 0:
-        remdobj.exchange()
-    for i in range(nrep):
-        xs[i].append(remdobj.mdobjs[i].x[0])
-
-for i in range(nrep):
-    plt.hist(xs[i], bins=100, density=True, label=str(betas[i]))
-x0 = np.arange(-2,2,0.01)
-y0 = np.exp(-beta*np.array(list(map(v, x0.reshape([-1,1])))))/0.644303
-plt.plot(x0, y0, label='exact')
-plt.legend()
-plt.savefig("REMD.png")
-plt.close()
-
-#itsobj = ITS(n=1, beta=beta, betas=betas, ns=np.ones(nrep), m=[1.0], lgam=1.0, pes=v, grad=dv)
-#
-#xs = []
-#ws = []
-#for i in range(100000):
-#    if i % 100 == 0:
-#        print(i,itsobj.mdobj.x[0])
-#    itsobj.integrator(dt=0.02)
-#    samp = itsobj.mdobj.x
-#    xs.append(samp[0])
-#    ws.append(np.exp(-beta*(itsobj.pes(samp)-itsobj.effpes(samp))))
-#
-#plt.hist(xs, weights=ws, bins=100, density=True, label='ITS')
-#x0 = np.arange(-2,2,0.01)
-#y0 = np.exp(-beta*np.array(list(map(v, x0.reshape([-1,1])))))/0.644303
-#plt.plot(x0, y0, label='exact')
-#plt.legend()
-#plt.savefig("ITS.png")
-#plt.close()
-
-#isremdobj = ISREMD(n=1, beta = beta, betas=betas, m=[1.0], lgam=1.0, infswap=True, nu=1, pes=v, grad=dv)
-#
-#xs = [[] for i in range(nrep)]
-#ws = [[] for i in range(nrep)]
-#for i in range(100000):
-#    if i % 100 == 0:
-#        print(i,isremdobj.mdobjs[0].x[0])
-#    isremdobj.integrator(dt=0.02)
-#    for j in range(nrep):
-#        for i in range(nrep):
-#            xs[j].append(isremdobj.mdobjs[i].x[0])
-#            ws[j].append(isremdobj.eta[i,j])
-#
-#for i in range(nrep):
-#    plt.hist(xs[i], weights=ws[i], bins=100, density=True, label=str(betas[i]))
-#x0 = np.arange(-2,2,0.01)
-#y0 = np.exp(-beta*np.array(list(map(v, x0.reshape([-1,1])))))/0.644303
-#plt.plot(x0, y0, label='exact')
-#plt.legend()
-#plt.savefig("ISREMD_nuInf.png")
-#plt.close()
-
+if __name__ == "__main__":
+    n = 2
+    m = [1.0, 1.0]
+    beta = 1.0
+    betas = np.exp(np.arange(0, -3, -0.6))
+    nrep = len(betas)
+    lgam = 1.0
+    dt = 0.02
+    nsteps = 1000000
+    nprint = 1000
+    jobtype = "REMD"
+    figname = "REMD"
+    
+    if jobtype == "MD":
+        mdobj = MD(n=n, beta=beta, m=m, lgam=lgam, pes=v, grad=dv)
+        xs = []
+        for i in range(nsteps):
+            if i % nprint == 0:
+                print(i,mdobj.x[0])
+            mdobj.lfmiddle_integrator(dt=dt)
+            xs.append(mdobj.x[0])
+        ws = np.ones_like(xs)
+    
+    elif jobtype == "REMD":
+        remdobj = REMD(n=n, betas=betas, m=m, lgam=lgam, pes=v, grad=dv)
+        xs = []
+        for i in range(nsteps):
+            if i % nprint == 0:
+                print(i,remdobj.mdobjs[0].x[0])
+            remdobj.integrator(dt=dt)
+            if i % 1 == 0:
+                remdobj.exchange()
+            xs.append(remdobj.mdobjs[0].x[0])
+        ws = np.ones_like(xs)
+    
+    elif jobtype == "ITS":
+        itsobj = ITS(n=n, beta=beta, betas=betas, ns=np.ones(nrep), m=m, lgam=lgam, pes=v, grad=dv)
+        xs = []
+        ws = []
+        for i in range(nsteps):
+            if i % nprint == 0:
+                print(i,itsobj.mdobj.x[0])
+            itsobj.integrator(dt=dt)
+            samp = itsobj.mdobj.x
+            xs.append(samp[0])
+            ws.append(np.exp(-beta*(itsobj.pes(samp)-itsobj.effpes(samp))))
+    
+    elif jobtype == "ISREMD":
+        isremdobj = ISREMD(n=n, beta=beta, betas=betas, m=m, lgam=lgam, infswap=True, nu=1, pes=v, grad=dv)
+        xs = []
+        ws = []
+        for i in range(nsteps):
+            if i % nprint == 0:
+                print(i,isremdobj.mdobjs[0].x[0])
+            isremdobj.integrator(dt=dt)
+            for i in range(nrep):
+                xs.append(isremdobj.mdobjs[i].x[0])
+                ws.append(isremdobj.eta[i,0])
+    
+    dens, edges = np.histogram(xs, weights=ws, range=(-2,2), bins=100, density=True)
+    cents = (edges[:-1] + edges[1:])/2
+    fes = -np.log(dens)/beta
+    plt.plot(cents, fes-min(fes), label=jobtype)
+    x0 = np.arange(-2,2,0.01)
+    y0 = x0**4 - (n-1)*alpha*x0**2/2/beta
+    plt.plot(x0, y0-min(y0), label='exact')
+    plt.legend()
+    plt.savefig(figname+".png")
+    plt.close()
+    

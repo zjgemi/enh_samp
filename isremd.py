@@ -3,8 +3,8 @@ from itertools import permutations
 from md import MD
 
 class ISREMD:
-    def __init__(self, n=1, beta = 1.0, betas=np.array([1.0]),
-            sigmas=None, m=None, x=None, p=None,
+    def __init__(self, n=1, beta=1.0, betas=np.array([1.0]),
+            m=None, x=None, p=None,
             lgam=1.0, infswap=False, nu=1e4,
             pes=None, grad=None):
         self.n = n # DOF
@@ -15,10 +15,7 @@ class ISREMD:
         self.infswap = infswap
         self.nu = nu
 
-        if sigmas != None:
-            self.sigmas = sigmas
-        else:
-            self.sigmas = list(range(self.nrep))
+        self.sigmas = list(range(self.nrep))
 
         self.mdobjs = [MD(n=n, beta=beta,
             m=m if not m is None else None,
@@ -33,6 +30,10 @@ class ISREMD:
         if grad != None:
             self.grad = grad
 
+        self.get_factors()
+        for i in range(self.nrep):
+            self.mdobjs[i].f *= self.factor[i]
+
     def pes(self, x):
         # potential energy surface
         # output is a scalar
@@ -43,7 +44,7 @@ class ISREMD:
         # output is n-dim vector
         pass
 
-    def integrator(self, dt):
+    def get_factors(self):
         pots = [self.pes(self.mdobjs[i].x) for i in range(self.nrep)]
 
         if self.infswap:
@@ -93,11 +94,14 @@ class ISREMD:
                 self.sigmas[j] = tmp
                 t += tau
 
-        factor = np.zeros(self.nrep)
+        self.factor = np.zeros(self.nrep)
         for j in range(self.nrep):
-            factor[j] = sum(self.betas*self.eta[:,j])/self.beta
+            self.factor[j] = sum(self.betas*self.eta[:,j])/self.beta
 
+    def integrator(self, dt):
         for i in range(self.nrep):
-            self.mdobjs[i].f *= factor[i]
             self.mdobjs[i].lfmiddle_integrator(dt)
+        self.get_factors()
+        for i in range(self.nrep):
+            self.mdobjs[i].f *= self.factor[i]
 

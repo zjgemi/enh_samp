@@ -39,7 +39,7 @@ class REMD:
             self.mdobjs[i].lfmiddle_integrator(dt)
 
     def exchange(self):
-        for i in range(self.nrep-1):
+        for i in list(range(0,self.nrep-1,2)) + list(range(1,self.nrep-1,2)):
             diff = -self.betas[i]*(self.pes(self.mdobjs[i+1].x)-self.pes(self.mdobjs[i].x))
             -self.betas[i+1]*(self.pes(self.mdobjs[i].x)-self.pes(self.mdobjs[i+1].x))
 

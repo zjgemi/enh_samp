@@ -58,19 +58,18 @@ class ISREMD:
         else:
             t = 0
             self.eta = np.zeros([self.nrep, self.nrep])
+
+            # initialize rate matrix
+            rates = np.zeros([self.nrep, self.nrep])
+            for i in range(self.nrep):
+                for j in range(i+1, self.nrep):
+                    diff = (self.betas[self.sigmas[j]]-self.betas[self.sigmas[i]])*(pots[j]-pots[i])
+                    rates[i,j] = self.nu*np.exp(diff)
+
             cnt = 0
             while t < dt:
                 cnt += 1
-                excs = []
-                rates = []
-                for i in range(self.nrep):
-                    for j in range(i+1, self.nrep):
-                        diff = -self.betas[self.sigmas[i]]*(pots[j]-pots[i])
-                        -self.betas[self.sigmas[j]]*(pots[i]-pots[j])
-                        rate = self.nu*np.exp(diff)
-                        excs.append((i,j))
-                        rates.append(rate)
-                sumrate = sum(rates)
+                sumrate = np.sum(rates)
                 tau = -np.log(np.random.random())/sumrate
 
                 if t + tau > dt:
@@ -81,16 +80,39 @@ class ISREMD:
 
                 rn = np.random.random()
                 sump = 0
-                for k, rate in enumerate(rates):
-                    sump += rate / sumrate
-                    if sump > rn:
-                        i, j = excs[k]
+                flag = False
+                for i in range(self.nrep):
+                    for j in range(i+1, self.nrep):
+                        sump += rates[i,j] / sumrate
+                        if sump > rn:
+                            flag = True
+                            break
+                    if flag:
                         break
 
                 tmp = self.sigmas[i]
                 self.sigmas[i] = self.sigmas[j]
                 self.sigmas[j] = tmp
                 t += tau
+
+                # update rate matrix
+                for k in range(i):
+                    diff = (self.betas[self.sigmas[i]]-self.betas[self.sigmas[k]])*(pots[i]-pots[k])
+                    rates[k,i] = self.nu*np.exp(diff)
+
+                for k in range(i+1,self.nrep):
+                    diff = (self.betas[self.sigmas[k]]-self.betas[self.sigmas[i]])*(pots[k]-pots[i])
+                    rates[i,k] = self.nu*np.exp(diff)
+
+                for k in range(j):
+                    diff = (self.betas[self.sigmas[j]]-self.betas[self.sigmas[k]])*(pots[j]-pots[k])
+                    rates[k,j] = self.nu*np.exp(diff)
+
+                for k in range(j+1,self.nrep):
+                    diff = (self.betas[self.sigmas[k]]-self.betas[self.sigmas[j]])*(pots[k]-pots[j])
+                    rates[j,k] = self.nu*np.exp(diff)
+
+            print(cnt)
 
         self.factor = np.zeros(self.nrep)
         for j in range(self.nrep):

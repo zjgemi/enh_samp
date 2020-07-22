@@ -91,7 +91,7 @@ def run_trj(itrj, jobname, n, m, beta, betas, lgam, dt, eqsteps, nsteps, pes, gr
                 print(i,itsobj.mdobj.x[0])
 
     elif jobtype == "ISREMD":
-        isremdobj = ISREMD(n=n, beta=beta, betas=betas, m=m, lgam=lgam, nu=5, pes=pes, grad=grad)
+        isremdobj = ISREMD(n=n, beta=beta, betas=betas, m=m, lgam=lgam, nu=200, pes=pes, grad=grad)
 
         print("Equilibrating..")
         for i in range(eqsteps):
@@ -125,8 +125,8 @@ if __name__ == "__main__":
     ntrjs = 16
     pool = Pool(ntrjs)
 
-    jobnames = ["REMD", "ITS"]#, "MD", "ISREMD"]
-    nstepss = [1000000, 15000000]#, 15000000, 1000000]
+    jobnames = ["MD", "REMD", "ITS", "ISREMD"]
+    nstepss = [15000000, 1000000, 15000000, 1000000]
     n = 41
     m = np.ones(n)
     beta = 40.0

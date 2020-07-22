@@ -3,18 +3,18 @@ from md import MD
 
 class ITS:
     def __init__(self, n=1, beta=1.0, betas=[1.0],
-            ns=[1.0], m=None, x=None, p=None,
+            nk=[1.0], m=None, x=None, p=None,
             lgam=1.0, pes=None, grad=None):
         self.n = n # DOF
         self.beta = beta # 1/(k_B*T)
         self.betas = betas
-        self.ns = ns
+        self.nk = nk
         self.nbeta = len(betas)
 
-        if pes != None:
+        if pes is not None:
             self.pes = pes
 
-        if grad != None:
+        if grad is not None:
             self.grad = grad
 
         self.mdobj = MD(n=n, beta=beta, m=m, x=x,
@@ -33,15 +33,15 @@ class ITS:
     def effpes(self, x):
         den = 0
         for i in range(self.nbeta):
-            den += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
+            den += self.nk[i]*np.exp(-self.betas[i]*self.pes(x))
         return -np.log(den)/self.beta
 
     def effgrad(self, x):
         num = 0
         den = 0
         for i in range(self.nbeta):
-            num += self.ns[i]*self.betas[i]*np.exp(-self.betas[i]*self.pes(x))
-            den += self.ns[i]*np.exp(-self.betas[i]*self.pes(x))
+            num += self.nk[i]*self.betas[i]*np.exp(-self.betas[i]*self.pes(x))
+            den += self.nk[i]*np.exp(-self.betas[i]*self.pes(x))
         return num/self.beta/den*self.grad(x)
 
     def integrator(self, dt):

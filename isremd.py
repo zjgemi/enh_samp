@@ -18,21 +18,19 @@ class ISREMD:
         self.sigmas = list(range(self.nrep))
 
         self.mdobjs = [MD(n=n, beta=beta,
-            m=m if not m is None else None,
-            x=x[i,:] if not x is None else None,
-            p=p[i,:] if not p is None else None,
+            m=m if m is not None else None,
+            x=x[i,:] if x is not None else None,
+            p=p[i,:] if p is not None else None,
             lgam=lgam, pes=pes, grad=grad)
             for i in range(self.nrep)]
 
-        if pes != None:
+        if pes is not None:
             self.pes = pes
 
-        if grad != None:
+        if grad is not None:
             self.grad = grad
 
-        self.get_factors()
-        for i in range(self.nrep):
-            self.mdobjs[i].f *= self.factor[i]
+        self.factor = None
 
     def pes(self, x):
         # potential energy surface
@@ -44,7 +42,7 @@ class ISREMD:
         # output is n-dim vector
         pass
 
-    def get_factors(self):
+    def get_factors(self, dt):
         pots = [self.pes(self.mdobjs[i].x) for i in range(self.nrep)]
 
         if self.infswap:
@@ -99,9 +97,15 @@ class ISREMD:
             self.factor[j] = sum(self.betas*self.eta[:,j])/self.beta
 
     def integrator(self, dt):
+        if self.factor is None:
+            self.get_factors(dt)
+            for i in range(self.nrep):
+                self.mdobjs[i].f *= self.factor[i]
+
         for i in range(self.nrep):
             self.mdobjs[i].lfmiddle_integrator(dt)
-        self.get_factors()
+
+        self.get_factors(dt)
         for i in range(self.nrep):
             self.mdobjs[i].f *= self.factor[i]
 

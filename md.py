@@ -10,7 +10,7 @@ class MD:
         self.lgam = lgam # friction coefficient in Langevin
 
         # initialize mass
-        if m == None:
+        if m is None:
             self.m = np.ones(n)
         else:
             m = np.array(m)
@@ -18,7 +18,7 @@ class MD:
             self.m = m
 
         # initialize position
-        if x == None:
+        if x is None:
             self.x = np.zeros(n)
         else:
             x = np.array(x)
@@ -26,17 +26,17 @@ class MD:
             self.x = x
 
         # initialize momentum
-        if p == None:
+        if p is None:
             self.p = np.random.normal(loc=0.0,scale=1.0,size=n)*np.sqrt(self.m/self.beta)
         else:
             p = np.array(p)
             assert(p.shape == (n,))
             self.p = p
 
-        if pes != None:
+        if pes is not None:
             self.pes = pes
 
-        if grad != None:
+        if grad is not None:
             self.grad = grad
 
         self.f = -self.grad(self.x)

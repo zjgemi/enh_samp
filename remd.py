@@ -11,19 +11,19 @@ class REMD:
         self.nrep = len(betas) # number of replicas
         self.betas = betas # list of 1/(k_B*T)
 
-        self.mdobjs = [MD(n=n, beta=beta,
-            m=m if m is not None else None,
-            x=x[i,:] if x is not None else None,
-            p=p[i,:] if p is not None else None,
-            lgam=lgam, pes=self.wrap(pes,betas[i]/beta),
-            grad=self.wrap(grad,betas[i]/beta))
-            for i in range(self.nrep)]
-
         if pes is not None:
             self.pes = pes
 
         if grad is not None:
             self.grad = grad
+
+        self.mdobjs = [MD(n=n, beta=beta,
+            m=m if m is not None else None,
+            x=x[i,:] if x is not None else None,
+            p=p[i,:] if p is not None else None,
+            lgam=lgam, pes=self.wrap(self.pes,betas[i]/beta),
+            grad=self.wrap(self.grad,betas[i]/beta))
+            for i in range(self.nrep)]
 
     def wrap(self, func, scale):
         def f(*args, **kwargs):

@@ -104,9 +104,9 @@ def run_trj(itrj, jobname, n, m, beta, betas, lgam, dt, eqsteps, nsteps, pes, gr
         ws = []
         for i in range(nsteps):
             isremdobj.integrator(dt=dt)
-            for i in range(nrep):
-                samp = isremdobj.mdobjs[i].x
-                wt = isremdobj.eta[i,0]
+            for j in range(nrep):
+                samp = isremdobj.mdobjs[j].x
+                wt = isremdobj.eta[j,0]
                 xs.append(samp[0])
                 ws.append(wt)
 

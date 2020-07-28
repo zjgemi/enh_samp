@@ -1,4 +1,5 @@
 import numpy as np
+from functools import partial
 from itertools import permutations
 from md import MD
 
@@ -17,20 +18,26 @@ class ISREMD:
 
         self.sigmas = list(range(self.nrep))
 
-        self.mdobjs = [MD(n=n, beta=beta,
-            m=m if m is not None else None,
-            x=x[i,:] if x is not None else None,
-            p=p[i,:] if p is not None else None,
-            lgam=lgam, pes=pes, grad=grad)
-            for i in range(self.nrep)]
-
         if pes is not None:
             self.pes = pes
 
         if grad is not None:
             self.grad = grad
 
-        self.factor = None
+        self.mdobjs = [MD(n=n, beta=beta,
+            m=m if m is not None else None,
+            x=x[i,:] if x is not None else None,
+            p=p[i,:] if p is not None else None,
+            lgam=lgam, pes=self.pes, grad=self.grad)
+            for i in range(self.nrep)]
+        
+        self.flag_factor = False # has set the factors for the 1st time
+
+    def effpes(self, x, i):
+        return self.pes(x)*self.factor[i]
+
+    def effgrad(self, x, i):
+        return self.grad(x)*self.factor[i]
 
     def pes(self, x):
         # potential energy surface
@@ -64,7 +71,7 @@ class ISREMD:
             for i in range(self.nrep):
                 for j in range(i+1, self.nrep):
                     diff = (self.betas[self.sigmas[j]]-self.betas[self.sigmas[i]])*(pots[j]-pots[i])
-                    rates[i,j] = self.nu*np.exp(diff)
+                    rates[i,j] = self.nu*np.exp(diff/2)
 
             cnt = 0
             while t < dt:
@@ -98,36 +105,38 @@ class ISREMD:
                 # update rate matrix
                 for k in range(i):
                     diff = (self.betas[self.sigmas[i]]-self.betas[self.sigmas[k]])*(pots[i]-pots[k])
-                    rates[k,i] = self.nu*np.exp(diff)
+                    rates[k,i] = self.nu*np.exp(diff/2)
 
                 for k in range(i+1,self.nrep):
                     diff = (self.betas[self.sigmas[k]]-self.betas[self.sigmas[i]])*(pots[k]-pots[i])
-                    rates[i,k] = self.nu*np.exp(diff)
+                    rates[i,k] = self.nu*np.exp(diff/2)
 
                 for k in range(j):
                     diff = (self.betas[self.sigmas[j]]-self.betas[self.sigmas[k]])*(pots[j]-pots[k])
-                    rates[k,j] = self.nu*np.exp(diff)
+                    rates[k,j] = self.nu*np.exp(diff/2)
 
                 for k in range(j+1,self.nrep):
                     diff = (self.betas[self.sigmas[k]]-self.betas[self.sigmas[j]])*(pots[k]-pots[j])
-                    rates[j,k] = self.nu*np.exp(diff)
+                    rates[j,k] = self.nu*np.exp(diff/2)
 
-            print(cnt)
+            #print(cnt)
 
         self.factor = np.zeros(self.nrep)
         for j in range(self.nrep):
             self.factor[j] = sum(self.betas*self.eta[:,j])/self.beta
 
     def integrator(self, dt):
-        if self.factor is None:
+        # get the factors for the 1st time
+        if not self.flag_factor:
             self.get_factors(dt)
             for i in range(self.nrep):
-                self.mdobjs[i].f *= self.factor[i]
+                self.mdobjs[i].pes = partial(self.effpes, i=i)
+                self.mdobjs[i].grad = partial(self.effgrad, i=i)
+                self.mdobjs[i].f = -self.mdobjs[i].grad(self.mdobjs[i].x)
+            self.flag_factor = True
 
         for i in range(self.nrep):
             self.mdobjs[i].lfmiddle_integrator(dt)
 
         self.get_factors(dt)
-        for i in range(self.nrep):
-            self.mdobjs[i].f *= self.factor[i]
 
